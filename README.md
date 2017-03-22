@@ -26,7 +26,7 @@ Le `TYPE_BACKUP` n'influence pas le contenu du backup, uniquement son nom :
 * LIVE : ne suffixe pas le nom du backup
 * MENSUEL, HEBDO : suffixe le nom du backup
 
-### English version
+### 🇺🇸 English version
 
 ### [EN] Description
 Backup script for hosting with SSH access. The script works with the single file **bm-backup-ssh.sh** which allows for :
