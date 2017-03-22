@@ -10,9 +10,9 @@ Script de sauvegarde bash (serveur dédié, VPS et sur certains mutualisés (com
 - la sauvegarde d'une base MySQL dans une archive .gz
 
 ## 🚦 Configuration minimale
-- un hébergement avec un accès SSH
-- interpréteur bash
-- binaires nécessaires : mysqldump, gzip, tar.
+- [X] un hébergement avec un accès SSH
+- [X] interpréteur bash
+- [X] binaires nécessaires : mysqldump, gzip, tar.
 
 ### 🚀 Utilisation
 Il est recommandé de créer un répertoire de destination un cran au dessus de "www", pour qu'il ne soit pas acessible. Si vous le laissez dans "www" pensez à protéger l'accès à ce dossier avec un fichier *.htaccess* ou à minima lui donner un nom exotique (pour des raisons de sécurité).
@@ -35,9 +35,9 @@ Backup script for hosting with SSH access. The script works with the single file
 - saving a MySQL database in a .gz archive
 
 ### [EN] 🚦 Requirements
-- hosting with SSH remote access
-- bash interpreter
-- required binaries : mysqldump, gzip, tar.
+- [X] hosting with SSH remote access
+- [X] bash interpreter
+- [X] required binaries : mysqldump, gzip, tar.
 
 ###[EN] 🚀 Usage 
 It is recommended to create a destination folder in the parent of "www", to not be accessible. If you leave it in "www" please protect it with a *.htaccess* file or rename something that nobody can easily figure out (for security reasons).
