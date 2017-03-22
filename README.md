@@ -1,6 +1,8 @@
 bm-backup-ssh (blogmotion backup ssh)
 ===
 
+> english version below
+
 ### Description
 Script de sauvegarde bash (serveur dédié, VPS et sur certains mutualisés (comme Web4all). Script composé d'un unique fichier **bm-backup-ssh.sh** qui permet :
 
@@ -26,13 +28,13 @@ Le `TYPE_BACKUP` n'influence pas le contenu du backup, uniquement son nom :
 
 ### English version
 
-###[EN] Description
+### [EN] Description
 Backup script for hosting with SSH access. The script works with the single file **bm-backup-ssh.sh** which allows for :
 
 - data backup in a tar.gz archive
 - saving a MySQL database in a .gz archive
 
-###[EN] 🚦 Requirements
+### [EN] 🚦 Requirements
 - hosting with SSH remote access
 - bash interpreter
 - required binaries : mysqldump, gzip, tar.
