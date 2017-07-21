@@ -14,6 +14,8 @@ Script de sauvegarde bash (serveur dédié, VPS et sur certains mutualisés (com
 - [X] interpréteur bash
 - [X] binaires nécessaires : mysqldump, gzip, tar.
 
+Guide complet : http://blogmotion.fr/systeme/backup-bm-blog-13132
+
 ### 🚀 Utilisation
 Il est recommandé de créer un répertoire de destination un cran au dessus de "www", pour qu'il ne soit pas acessible. Si vous le laissez dans "www" pensez à protéger l'accès à ce dossier avec un fichier *.htaccess* ou à minima lui donner un nom exotique (pour des raisons de sécurité).
 
@@ -38,6 +40,8 @@ Backup script for hosting with SSH access. The script works with the single file
 - [X] hosting with SSH remote access
 - [X] bash interpreter
 - [X] required binaries : mysqldump, gzip, tar.
+
+How To : http://blogmotion.fr/systeme/backup-bm-blog-13132
 
 ###[EN] 🚀 Usage 
 It is recommended to create a destination folder in the parent of "www", to not be accessible. If you leave it in "www" please protect it with a *.htaccess* file or rename something that nobody can easily figure out (for security reasons).

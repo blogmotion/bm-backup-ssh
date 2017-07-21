@@ -3,7 +3,7 @@
 #
 # Author: Mr Xhark -> @xhark
 # License : Creative Commons http://creativecommons.org/licenses/by-nd/4.0/deed.fr
-# Website : http://blogmotion.fr 
+# Website : http://blogmotion.fr/systeme/backup-bm-blog-13132 
 VERSION="2015.05.15"
 
 #============================#
