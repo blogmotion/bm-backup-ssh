@@ -83,11 +83,12 @@ echo -e "${COUL_BG_ROSE}\n\n\n=== Lancement du backup complet le : $(date +'%d/%
 ###########################
 # lancement du backup data (sans verbose sur le tar : ajouter v pour l'avoir "zcvf")
 
-tar zcf ${DST_BACKUP}/${MON_GZ} ${SRC_BACKUP} 	\
-	--exclude '${DST_BACKUP}' 					\
-	--exclude '/var/www/html/wp-content/backup' \
-	--exclude '/var/www/html/wp-content/cache'  \
-	--exclude '/var/www/html/un_repertoire_a_exclure'
+tar zcf  												\
+	--exclude '${DST_BACKUP}' 							\
+	--exclude '/var/www/html/wp-content/backup' 		\
+	--exclude '/var/www/html/wp-content/cache'  		\
+	--exclude '/var/www/html/un_repertoire_a_exclure' 	\
+	${DST_BACKUP}/${MON_GZ} ${SRC_BACKUP}
 
 	
 ###########################
