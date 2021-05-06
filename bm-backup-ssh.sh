@@ -4,7 +4,7 @@
 # Author: Mr Xhark -> @xhark
 # License : Creative Commons http://creativecommons.org/licenses/by-nd/4.0/deed.fr
 # Website : http://blogmotion.fr/systeme/backup-bm-blog-13132 
-VERSION="2015.05.15"
+VERSION="2021.05.16"
 
 #============================#
 #    VARIABLES A MODIFIER    #
@@ -41,14 +41,14 @@ COUL_CYAN="\033[1;36m"
 COUL_BG_ROSE="\033[45m"
 
 # Teste le nombre d'arguments du script (toujours une bonne idee) et controle le type de backup passe en argument
-if [[ $# != "$ARGS" || ($TYPEBACKUP != "MENSUEL" && $TYPEBACKUP != "HEBDO" && $TYPEBACKUP != "LIVE") ]]
+if [[ $# != "$ARGS" || ($TYPEBACKUP != "MENSUEL" && $TYPEBACKUP != "HEBDO" && $TYPEBACKUP != "LIVE" && $TYPEBACKUP != "BDD") ]]
 then
 	if [[  $TYPEBACKUP == "LIVE" ]]; then
-		TYPEBACKUP=''		
+		SUFFIXE=''		
 	fi
 
         echo -e "${COUL_JAUNE}Utilisation: `basename $0` TYPE_DU_BACKUP ${COUL_RESET} \n"
-        echo -e "Type de backup possibles :${COUL_VERT} MENSUEL, HEBDO, LIVE ${COUL_RESET}"
+        echo -e "Type de backup possibles :${COUL_VERT} MENSUEL, HEBDO, LIVE, BDD ${COUL_RESET}"
         echo -e "Les modes MENSUEL et HEBDO suffixent:                  [date]_backup-${SITENAME}_data|mysql__${COUL_VERT}MENSUEL|HEBDO${COUL_RESET}.tar.gz"
         echo -e "Le mode LIVE ne suffixe pas, il permet un instantanne: [date]_backup-${SITENAME}_data|mysql.tar.gz"
 		echo -e "\n\t${COUL_BLANC}scripted by @xhark - Creative Commons BY-ND 4.0 (v${VERSION}) ${COUL_RESET}\n"
@@ -57,16 +57,15 @@ fi
 
 # on definit le suffixe suivant le type de backup
 if [[ $TYPEBACKUP == "LIVE" ]]; then
-	TYPEBACKUP=''
+	SUFFIXE=''
 else
-	TYPEBACKUP="__${TYPEBACKUP}"
+	SUFFIXE="__"$TYPEBACKUP
 fi
 
 
-
 NOW=$(date +"%Y-%m-%d")
-MON_GZ="${NOW}_backup-${SITENAME}_data${TYPEBACKUP}.tar.gz"
-MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${TYPEBACKUP}.gz"
+MON_GZ="${NOW}_backup-${SITENAME}_data${SUFFIXE}.tar.gz"
+MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${SUFFIXE}.gz"
 
 #####################################
 # Debut du script
@@ -74,33 +73,46 @@ MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${TYPEBACKUP}.gz"
 mkdir -p $DST_BACKUP
 
 # Supprime les backups existants (pour pas prendre trop de place)
-rm ${DST_BACKUP}/*backup-${SITENAME}_data*.tar.gz
-rm ${DST_BACKUP}/*backup-${SITENAME}_mysql*.gz
+rm ${DST_BACKUP}/*backup-${SITENAME}_data*.tar.gz 	2> /dev/null
+rm ${DST_BACKUP}/*backup-${SITENAME}_mysql*.gz		2> /dev/null
 
-echo -e "${COUL_BG_ROSE}\n\n\n=== Lancement du backup complet le : $(date +'%d/%m/%Y a %Hh%M') ... ${COUL_RESET}"
+echo -e "${COUL_BG_ROSE}\n\n\n=== Lancement du backup ${TYPEBACKUP} le : $(date +'%d/%m/%Y a %Hh%M') ... ${COUL_RESET}"
 
+if [[ $TYPEBACKUP == "BDD" ]]; then
+        echo -e "${COUL_CYAN}Sauvegarde BDD seule, skip des datas${COUL_RESET}"
+else
 
 ###########################
 # lancement du backup data (sans verbose sur le tar : ajouter v pour l'avoir "zcvf")
 
-tar zcf  												\
-	--exclude '${DST_BACKUP}' 							\
-	--exclude '/var/www/html/wp-content/backup' 		\
-	--exclude '/var/www/html/wp-content/cache'  		\
-	--exclude '/var/www/html/un_repertoire_a_exclure' 	\
-	${DST_BACKUP}/${MON_GZ} ${SRC_BACKUP}
+	# compression multithread si pigz disponible
+	type -P pigz &>/dev/null && TAR_OPT="-I pigz -cf" && GZ="pigz -v" || TAR_OPT="zcf" && GZ="gzip -v"
 
+	tar $TAR_OPT $DST_BACKUP/$MON_GZ $SRC_BACKUP 			\
+		--exclude '${DST_BACKUP}' 							\
+		--exclude '/var/www/html/wp-content/backup' 		\
+		--exclude '/var/www/html/wp-content/cache'  		\
+		--exclude '/var/www/html/un_repertoire_a_exclure'
+
+fi
 	
 ###########################
 # lancement du backup mysql
 
-mysqldump -h $hostsql -u $usersql -p${mdpsql} $basesql | gzip -v > ${DST_BACKUP}/${MON_MYSQL} 
+if MYSQL_PWD=$mdpsql mysqldump --single-transaction --column-statistics=0 --host=$hostsql --user=$usersql $basesql | gzip -v > $DST_BACKUP/$MON_MYSQL
+then
+	echo -e "\n... mysqldump : OK\n"
+else
+	echo -e "${COUL_ROUG} ATTENTION : IL Y A UNE ERREUR DANS L'EXPORT MYSQLDUMP ${COUL_RESET}"
+fi
 
 # fin du script
-echo -e "${COUL_BG_ROSE}\n\n\n=== ... Fin du Backup complet (data+mysql) le $(date +'%d/%m/%Y a %Hh%M')\n\n\n ${COUL_RESET}"
+echo -e "${COUL_BG_ROSE}\n\n\n=== ... Fin du Backup ${TYPEBACKUP} le $(date +'%d/%m/%Y a %Hh%M') -- opt:$TAR_OPT \n\n\n ${COUL_RESET}"
 
 # on affiche la taille et chemin du backup
 cd $DST_BACKUP
 echo -e $COUL_CYAN
-ls -lh $MON_GZ $MON_MYSQL | awk '{print $5, "\t"$6, "\t"$7, "\t"$8, "\t"$9}'
+ls -lh $MON_GZ $MON_MYSQL 2> /dev/null | awk '{print $5, "\t"$6, "\t"$7, "\t"$8, "\t"$9}'
 echo -e "\n\n\n $COUL_RESET"
+
+exit 0
