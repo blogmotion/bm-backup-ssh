@@ -4,7 +4,7 @@
 # Author: Mr Xhark -> @xhark
 # License : Creative Commons http://creativecommons.org/licenses/by-nd/4.0/deed.fr
 # Website : http://blogmotion.fr/systeme/backup-bm-blog-13132 
-VERSION="2021.05.16"
+VERSION="2022.01.02"
 
 #============================#
 #    VARIABLES A MODIFIER    #
@@ -41,9 +41,9 @@ COUL_CYAN="\033[1;36m"
 COUL_BG_ROSE="\033[45m"
 
 # Teste le nombre d'arguments du script (toujours une bonne idee) et controle le type de backup passe en argument
-if [[ $# != "$ARGS" || ($TYPEBACKUP != "MENSUEL" && $TYPEBACKUP != "HEBDO" && $TYPEBACKUP != "LIVE" && $TYPEBACKUP != "BDD") ]]
+if [[ $# != "$ARGS" || (${TYPEBACKUP} != "MENSUEL" && ${TYPEBACKUP} != "HEBDO" && ${TYPEBACKUP} != "LIVE" && ${TYPEBACKUP} != "BDD") ]]
 then
-	if [[  $TYPEBACKUP == "LIVE" ]]; then
+	if [[  ${TYPEBACKUP} == "LIVE" ]]; then
 		SUFFIXE=''		
 	fi
 
@@ -56,10 +56,10 @@ then
 fi
 
 # on definit le suffixe suivant le type de backup
-if [[ $TYPEBACKUP == "LIVE" ]]; then
+if [[ ${TYPEBACKUP} == "LIVE" ]]; then
 	SUFFIXE=''
 else
-	SUFFIXE="__"$TYPEBACKUP
+	SUFFIXE="__"${TYPEBACKUP}
 fi
 
 
@@ -70,7 +70,7 @@ MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${SUFFIXE}.gz"
 #####################################
 # Debut du script
 # Creation du rep de destination s'il n'existe pas
-mkdir -p $DST_BACKUP
+mkdir -p ${DST_BACKUP}
 
 # Supprime les backups existants (pour pas prendre trop de place)
 rm ${DST_BACKUP}/*backup-${SITENAME}_data*.tar.gz 	2> /dev/null
@@ -78,7 +78,7 @@ rm ${DST_BACKUP}/*backup-${SITENAME}_mysql*.gz		2> /dev/null
 
 echo -e "${COUL_BG_ROSE}\n\n\n=== Lancement du backup ${TYPEBACKUP} le : $(date +'%d/%m/%Y a %Hh%M') ... ${COUL_RESET}"
 
-if [[ $TYPEBACKUP == "BDD" ]]; then
+if [[ ${TYPEBACKUP} == "BDD" ]]; then
         echo -e "${COUL_CYAN}Sauvegarde BDD seule, skip des datas${COUL_RESET}"
 else
 
@@ -88,18 +88,19 @@ else
 	# compression multithread si pigz disponible
 	type -P pigz &>/dev/null && TAR_OPT="-I pigz -cf" && GZ="pigz -v" || TAR_OPT="zcf" && GZ="gzip -v"
 
-	tar $TAR_OPT $DST_BACKUP/$MON_GZ $SRC_BACKUP 			\
+	tar $TAR_OPT ${DST_BACKUP}/${MON_GZ} \ 
 		--exclude '${DST_BACKUP}' 							\
 		--exclude '/var/www/html/wp-content/backup' 		\
 		--exclude '/var/www/html/wp-content/cache'  		\
-		--exclude '/var/www/html/un_repertoire_a_exclure'
+		--exclude '/var/www/html/un_repertoire_a_exclure'	\
+		$SRC_BACKUP
 
 fi
 	
 ###########################
 # lancement du backup mysql
 
-if MYSQL_PWD=$mdpsql mysqldump --single-transaction --column-statistics=0 --host=$hostsql --user=$usersql $basesql | gzip -v > $DST_BACKUP/$MON_MYSQL
+if MYSQL_PWD=${mdpsql} mysqldump --single-transaction --column-statistics=0 --host=${hostsql} --user=${usersql} ${basesql} | gzip -v > ${DST_BACKUP}/${MON_MYSQL}
 then
 	echo -e "\n... mysqldump : OK\n"
 else
@@ -110,9 +111,9 @@ fi
 echo -e "${COUL_BG_ROSE}\n\n\n=== ... Fin du Backup ${TYPEBACKUP} le $(date +'%d/%m/%Y a %Hh%M') -- opt:$TAR_OPT \n\n\n ${COUL_RESET}"
 
 # on affiche la taille et chemin du backup
-cd $DST_BACKUP
-echo -e $COUL_CYAN
-ls -lh $MON_GZ $MON_MYSQL 2> /dev/null | awk '{print $5, "\t"$6, "\t"$7, "\t"$8, "\t"$9}'
-echo -e "\n\n\n $COUL_RESET"
+cd ${DST_BACKUP}
+echo -e ${COUL_CYAN}
+ls -lh ${MON_GZ} ${MON_MYSQL} 2> /dev/null | awk '{print $5, "\t"$6, "\t"$7, "\t"$8, "\t"$9}'
+echo -e "\n\n\n ${COUL_RESET}"
 
 exit 0
