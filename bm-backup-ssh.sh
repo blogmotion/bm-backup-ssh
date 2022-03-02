@@ -4,7 +4,7 @@
 # Author: Mr Xhark -> @xhark
 # License : Creative Commons http://creativecommons.org/licenses/by-nd/4.0/deed.fr
 # Website : http://blogmotion.fr/systeme/backup-bm-blog-13132 
-VERSION="2022.01.02"
+VERSION="2022.03.02"
 
 #============================#
 #    VARIABLES A MODIFIER    #
@@ -24,6 +24,9 @@ basesql="ma_base"
 # Nom du site au choix (sans espace), apparaitra dans le nom des fichiers
 SITENAME="bm"
 
+# Compression: gz,bz2 (defaut=gz)
+EXTARCHIVE="gz"
+
 #### FIN DES VARIABLES - NE RIEN MODIFIER APRES CETTE LIGNE ####
 ################################################################
 
@@ -31,6 +34,17 @@ SITENAME="bm"
 ARGS=1
 E_MAUVAISARGS=0
 TYPEBACKUP=$1
+
+# definition des options de TAR et du compresseur associe pour mysqldump
+if [[  ${EXTARCHIVE,,} == "gz" ]]; then
+        TAR_OPT="zcf"
+		COMPRESSOR="gzip -v"
+elif [[  ${EXTARCHIVE,,} == "bz2" ]]; then
+        TAR_OPT="jcf"
+		COMPRESSOR="bzip2"
+fi
+
+
 
 # Couleurs
 COUL_RESET="\033[0m"
@@ -49,8 +63,8 @@ then
 
         echo -e "${COUL_JAUNE}Utilisation: `basename $0` TYPE_DU_BACKUP ${COUL_RESET} \n"
         echo -e "Type de backup possibles :${COUL_VERT} MENSUEL, HEBDO, LIVE, BDD ${COUL_RESET}"
-        echo -e "Les modes MENSUEL et HEBDO suffixent:                  [date]_backup-${SITENAME}_data|mysql__${COUL_VERT}MENSUEL|HEBDO${COUL_RESET}.tar.gz"
-        echo -e "Le mode LIVE ne suffixe pas, il permet un instantanne: [date]_backup-${SITENAME}_data|mysql.tar.gz"
+        echo -e "Les modes MENSUEL et HEBDO suffixent:                  [date]_backup-${SITENAME}_data|mysql__${COUL_VERT}MENSUEL|HEBDO${COUL_RESET}.tar.${EXTARCHIVE}"
+        echo -e "Le mode LIVE ne suffixe pas, il permet un instantanne: [date]_backup-${SITENAME}_data|mysql(.tar).${EXTARCHIVE}"
 		echo -e "\n\t${COUL_BLANC}scripted by @xhark - Creative Commons BY-ND 4.0 (v${VERSION}) ${COUL_RESET}\n"
         exit $E_MAUVAISARGS
 fi
@@ -64,17 +78,30 @@ fi
 
 
 NOW=$(date +"%Y-%m-%d")
-MON_GZ="${NOW}_backup-${SITENAME}_data${SUFFIXE}.tar.gz"
-MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${SUFFIXE}.gz"
+MON_GZ="${NOW}_backup-${SITENAME}_data${SUFFIXE}.tar.${EXTARCHIVE}"
+MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${SUFFIXE}.${EXTARCHIVE}"
+
+#### Fonctions ################################################################
+
+# Compare:  $1>= $2 alors Retourne 0, sinon retourne 1 -- https://stackoverflow.com/a/4024263/6357587
+verMinimale() {
+   [ "$1" = "$2" ] && return 0 || [ "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
 
 #####################################
 # Debut du script
+
+# lecture version de TAR
+TARINFO=$(tar --version | head -1)
+DELIM="tar (GNU tar) "
+TARVERSION=${TARINFO#*$DELIM}
+
 # Creation du rep de destination s'il n'existe pas
 mkdir -p ${DST_BACKUP}
 
 # Supprime les backups existants (pour pas prendre trop de place)
-rm ${DST_BACKUP}/*backup-${SITENAME}_data*.tar.gz 	2> /dev/null
-rm ${DST_BACKUP}/*backup-${SITENAME}_mysql*.gz		2> /dev/null
+rm ${DST_BACKUP}/*backup-${SITENAME}_data*.tar.${EXTARCHIVE} 	2> /dev/null
+rm ${DST_BACKUP}/*backup-${SITENAME}_mysql*.${EXTARCHIVE} 		2> /dev/null
 
 echo -e "${COUL_BG_ROSE}\n\n\n=== Lancement du backup ${TYPEBACKUP} le : $(date +'%d/%m/%Y a %Hh%M') ... ${COUL_RESET}"
 
@@ -82,25 +109,35 @@ if [[ ${TYPEBACKUP} == "BDD" ]]; then
         echo -e "${COUL_CYAN}Sauvegarde BDD seule, skip des datas${COUL_RESET}"
 else
 
-###########################
-# lancement du backup data (sans verbose sur le tar : ajouter v pour l'avoir "zcvf")
+	###########################
+	# lancement du backup data (sans verbose sur le tar : ajouter v pour l'avoir "zcvf")
 
-	# compression multithread si pigz disponible
-	type -P pigz &>/dev/null && TAR_OPT="-I pigz -cf" && GZ="pigz -v" || TAR_OPT="zcf" && GZ="gzip -v"
-
-	tar $TAR_OPT ${DST_BACKUP}/${MON_GZ} \ 
-		--exclude '${DST_BACKUP}' 							\
-		--exclude '/var/www/html/wp-content/backup' 		\
-		--exclude '/var/www/html/wp-content/cache'  		\
-		--exclude '/var/www/html/un_repertoire_a_exclure'	\
-		$SRC_BACKUP
+		# compression multithread si pigz disponible, sinon on reste sur le choix de l'utilisateur (voir $EXTARCHIVE)
+		type -P pigz &>/dev/null && TAR_OPT="-I pigz -cf" && COMPRESSOR="pigz -v"
+		
+		# si version de TAR >= 1.30 (https://bit.ly/tar-options)
+		if ! verMinimale $tarv "1.30"; then
+			tar $TAR_OPT ${DST_BACKUP}/${MON_GZ} \ 
+				--exclude "${DST_BACKUP}" 							\
+				--exclude "/var/www/html/wp-content/backup" 		\
+				--exclude "/var/www/html/wp-content/cache"  		\
+				--exclude "/var/www/html/un_repertoire_a_exclure"	\
+				${SRC_BACKUP}
+		# sinon vieille version de TAR "--exclude" doit etre en 1er
+		else
+			tar --exclude "${DST_BACKUP}"							\
+				--exclude "/var/www/html/wp-content/backup"			\
+				--exclude "/var/www/html/wp-content/cache"			\
+				--exclude "/var/www/html/un_repertoire_a_exclure"	\
+				$TAR_OPT ${DST_BACKUP}/${MON_GZ} ${SRC_BACKUP}
+		fi
 
 fi
 	
 ###########################
 # lancement du backup mysql
 
-if MYSQL_PWD=${mdpsql} mysqldump --single-transaction --column-statistics=0 --host=${hostsql} --user=${usersql} ${basesql} | gzip -v > ${DST_BACKUP}/${MON_MYSQL}
+if MYSQL_PWD=${mdpsql} mysqldump --single-transaction --column-statistics=0 --host=${hostsql} --user=${usersql} ${basesql} | ${COMPRESSOR} > ${DST_BACKUP}/${MON_MYSQL}
 then
 	echo -e "\n... mysqldump : OK\n"
 else
