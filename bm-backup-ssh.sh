@@ -85,7 +85,7 @@ MON_MYSQL="${NOW}_backup-${SITENAME}_mysql${SUFFIXE}.${EXTARCHIVE}"
 
 # Compare:  $1>= $2 alors Retourne 0, sinon retourne 1 -- https://stackoverflow.com/a/4024263/6357587
 verMinimale() {
-   [ "$1" = "$2" ] && return 0 || [ "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+   [ "$1" = "$2" ] && return 0 || [ "$1" = "$(echo -e "$1\n$2" | sort -rV | head -n1 | grep $1)" ]
 }
 
 #####################################
@@ -116,7 +116,7 @@ else
 		type -P pigz &>/dev/null && TAR_OPT="-I pigz -cf" && COMPRESSOR="pigz -v"
 		
 		# si version de TAR >= 1.30 (https://bit.ly/tar-options)
-		if ! verMinimale $tarv "1.30"; then
+		if verMinimale $TARVERSION "1.30"; then
 			tar $TAR_OPT ${DST_BACKUP}/${MON_GZ} \ 
 				--exclude "${DST_BACKUP}" 							\
 				--exclude "/var/www/html/wp-content/backup" 		\
