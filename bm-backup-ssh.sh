@@ -4,7 +4,7 @@
 # Author: Mr Xhark -> @xhark
 # License : Creative Commons http://creativecommons.org/licenses/by-nd/4.0/deed.fr
 # Website : http://blogmotion.fr/systeme/backup-bm-blog-13132 
-VERSION="2022.03.02"
+VERSION="2023.01.10"
 
 #============================#
 #    VARIABLES A MODIFIER    #
@@ -43,7 +43,6 @@ elif [[  ${EXTARCHIVE,,} == "bz2" ]]; then
         TAR_OPT="jcf"
 		COMPRESSOR="bzip2"
 fi
-
 
 
 # Couleurs
@@ -137,7 +136,16 @@ fi
 ###########################
 # lancement du backup mysql
 
-if MYSQL_PWD=${mdpsql} mysqldump --single-transaction --column-statistics=0 --host=${hostsql} --user=${usersql} ${basesql} | ${COMPRESSOR} > ${DST_BACKUP}/${MON_MYSQL}
+# mariaDB ou MySQL ?
+if mysqldump --version | grep -qi MariaDB; then
+    # mysqldump de MariaDB ne supporte pas l'option:
+    COLSTATS=''
+else
+    # mysqldump de MySQL supporte l'option:
+    COLSTATS='--column-statistics=0'
+fi
+
+if MYSQL_PWD=${mdpsql} mysqldump --single-transaction ${COLSTATS} --host=${hostsql} --user=${usersql} ${basesql} | ${COMPRESSOR} > ${DST_BACKUP}/${MON_MYSQL}
 then
 	echo -e "\n... mysqldump : OK\n"
 else
